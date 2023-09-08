@@ -11,11 +11,23 @@ from trafilatura import sitemaps, feeds
 import json
 import re
 from collections import Counter
+import pandas as pd
 
+import numpy as np
 from kiwipiepy import Kiwi
 kiwi = Kiwi(model_type='sbg')
 
 kiwi.add_user_word("리마인더", "NNG")
+kiwi.add_user_word("익스트림", "NNG")
+
+
+def softmax(numpy_array):
+    exp = np.exp(numpy_array)
+    sum = np.sum(exp)
+    y = exp / sum
+
+    return y
+
 
 def make_word_list(apps_list):
     title_total_counts = Counter()
@@ -36,10 +48,12 @@ def make_word_dict(word_list):
     id_to_word_dict = {}
     word_to_id_dict = {}
     for i, word in enumerate(word_list):
+        print(i)
+        print(word)
         id_to_word_dict[i] = word
         word_to_id_dict[word] = i
 
-    return id_to_word_dict, id_to_word_dict
+    return id_to_word_dict, word_to_id_dict
     
     
 
@@ -94,7 +108,7 @@ def extract_apps_detail(url: str, title_select: str = '', title_select_p: str = 
 
 def main():
     # 키워드 입력
-    keyword = "투두"
+    keyword = "공 굴리기"
     search_url = f"https://play.google.com/store/search?q={keyword}&c=apps"
 
     # 상위 앱 추출
@@ -133,19 +147,68 @@ def main():
     
     ##전체 word list 및 word dictionary 생성
     title_word_list, info_word_list = make_word_list(apps_list=apps_list)
+    print(title_word_list)
     title_id_to_word_dict, title_word_to_id_dict = make_word_dict(title_word_list)
     info_id_to_word_dict, info_word_to_id_dict = make_word_dict(info_word_list)
 
+    ##numpy로 단어-app순위 matrix 생성
+    print(title_word_to_id_dict)
+    header = ['0위','1위','2위','3위','4위','5위','6위','7위','8위','9위']
+
+    ###title matrix
+    title_word_score_matrix = np.zeros((10, len(title_word_list)))
+    for i, app in enumerate(apps_list):
+        for key, count in app['title_word_count'].most_common():
+            index = title_word_to_id_dict[key]
+            title_word_score_matrix[i, index] = count
+        title_word_score_matrix[i] = softmax(title_word_score_matrix[i])
+
+
+    ###info matrix
+    info_word_score_matrix = np.zeros((10, len(info_word_list)))
+
+
+    for i, app in enumerate(apps_list):
+        for key, count in app['info_word_count'].most_common():
+            index = info_word_to_id_dict[key]
+            info_word_score_matrix[i, index] = count
+        info_word_score_matrix[i] = softmax(info_word_score_matrix[i])
+
+
+
     
 
-    print(info_word_to_id_dict)
-
-
-
 
     
+    # 분석 결과 저장
 
-        
+    ##title word matrix 저장
+    title_index_label = [] 
+    for i in range(len(title_word_list)):
+        title_index_label.append(title_id_to_word_dict[i]) #word list에서의 index 위치가 word의 id 값으로 사용됨
+
+    title_word_score_matrix = title_word_score_matrix.T
+    title_df = pd.DataFrame(title_word_score_matrix)
+    title_df.index = title_index_label
+    title_df.columns = header
+    title_df.to_excel(f"{keyword}_title_word.xlsx")
+
+    ##info word matrix 저장
+    info_index_label = []
+    for i in range(len(info_word_list)):
+        info_index_label.append(info_id_to_word_dict[i])
+
+    info_word_score_matrix = info_word_score_matrix.T
+    info_df = pd.DataFrame(info_word_score_matrix)
+    info_df.index = info_index_label
+    info_df.columns = header
+    info_df.to_excel(f"{keyword}_info_word.xlsx")
+
+
+
+
+
+
 
 if __name__ == "__main__":
     main()
