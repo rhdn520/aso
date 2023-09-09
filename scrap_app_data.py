@@ -54,18 +54,6 @@ def make_word_dict(word_list):
         word_to_id_dict[word] = i
 
     return id_to_word_dict, word_to_id_dict
-    
-    
-
-
-
-# def softmax(word_counter):
-    
-    
-
-
-
-
 
 
 def clean_text(input):
@@ -92,7 +80,7 @@ def extract_apps_url_list(url: str, container_select: str = '', list_select: str
 
     return url_list
 
-def extract_apps_detail(url: str, title_select: str = '', title_select_p: str = '', info_select: str = ''):
+def extract_apps_detail(url: str, info_select: str = ''):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36",
         "Accept-Language": "ko-kr"
@@ -108,7 +96,7 @@ def extract_apps_detail(url: str, title_select: str = '', title_select_p: str = 
 
 def main():
     # 키워드 입력
-    keyword = "공 굴리기"
+    keyword = "롤링볼"
     search_url = f"https://play.google.com/store/search?q={keyword}&c=apps"
 
     # 상위 앱 추출
@@ -118,8 +106,6 @@ def main():
     apps_url_list = extract_apps_url_list(search_url, container_select=list_selector, list_select=app_selector, relative_path=True, host=host)
 
     # 앱 소개 추출
-    title_selector = "#yDmH0d > c-wiz.SSPGKf.Czez9d > div > div > div.tU8Y5c > div:nth-child(1) > div > div > c-wiz > div.hnnXjf > div.Il7kR > div > h1 > span"
-    title_selector_p = "#yDmH0d > c-wiz.SSPGKf.Czez9d > div > div > div.tU8Y5c > div.P9KVBf > div > div > c-wiz > div.hnnXjf.XcNflb.J1Igtd > div.qxNhq > div > h1 > span"
     title_selector_p = "#yDmH0d > c-wiz.SSPGKf.Czez9d > div > div > div.tU8Y5c > div.P9KVBf > div > div > c-wiz > div.hnnXjf.XcNflb.J1Igtd > div.qxNhq > div > h1 > span"
     info_selector ="#yDmH0d > c-wiz.SSPGKf.Czez9d > div > div > div.tU8Y5c > div.wkMJlb.YWi3ub > div > div.qZmL0 > div:nth-child(1) > c-wiz:nth-child(2) > div > section > div > div.bARER"
 
@@ -127,7 +113,7 @@ def main():
     apps_list = []
     for url in apps_url_list:
         print(url)
-        apps_detail = extract_apps_detail(url=url,title_select=title_selector, title_select_p= title_selector_p, info_select=info_selector)
+        apps_detail = extract_apps_detail(url=url, info_select=info_selector)
         title = apps_detail[0]
         info = apps_detail[1]
         app_info = {
@@ -153,7 +139,10 @@ def main():
 
     ##numpy로 단어-app순위 matrix 생성
     print(title_word_to_id_dict)
-    header = ['0위','1위','2위','3위','4위','5위','6위','7위','8위','9위']
+    header = []
+    for url in apps_url_list:
+        header.append(url[46:])
+
 
     ###title matrix
     title_word_score_matrix = np.zeros((10, len(title_word_list)))
@@ -174,6 +163,18 @@ def main():
             info_word_score_matrix[i, index] = count
         info_word_score_matrix[i] = softmax(info_word_score_matrix[i])
 
+    
+    log_n = np.log([10,9,8,7,6,5,4,3,2,1])
+    ###Title matrix 분석
+    title_word_score_matrix = title_word_score_matrix.T
+    appear_score = np.matmul(title_word_score_matrix, log_n)
+    coincide_score = np.log(np.average(title_word_score_matrix, axis=1))
+    print(appear_score.shape)
+    print(coincide_score.shape)
+
+    ###Info Matrix 분석
+    info_word_score_matrix = info_word_score_matrix.T
+
 
 
     
@@ -187,7 +188,6 @@ def main():
     for i in range(len(title_word_list)):
         title_index_label.append(title_id_to_word_dict[i]) #word list에서의 index 위치가 word의 id 값으로 사용됨
 
-    title_word_score_matrix = title_word_score_matrix.T
     title_df = pd.DataFrame(title_word_score_matrix)
     title_df.index = title_index_label
     title_df.columns = header
@@ -198,7 +198,6 @@ def main():
     for i in range(len(info_word_list)):
         info_index_label.append(info_id_to_word_dict[i])
 
-    info_word_score_matrix = info_word_score_matrix.T
     info_df = pd.DataFrame(info_word_score_matrix)
     info_df.index = info_index_label
     info_df.columns = header
