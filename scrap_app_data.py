@@ -92,11 +92,22 @@ def extract_apps_detail(url: str, info_select: str = ''):
 
     return title, info
 
+log_n = np.log([10,9,8,7,6,5,4,3,2,1])
+
+def calc_appearance_score(keyword_matrix):
+    # print(keyword_matrix)
+    appear_score = np.matmul(log_n, keyword_matrix)
+    return appear_score
+
+def calc_coincide_score(keyword_matrix):
+    keyword_matrix = keyword_matrix ** 0.5
+    return np.average(keyword_matrix, axis=0) * 10
+
 
 
 def main():
     # 키워드 입력
-    keyword = "롤링볼"
+    keyword = "루틴관리"
     search_url = f"https://play.google.com/store/search?q={keyword}&c=apps"
 
     # 상위 앱 추출
@@ -142,6 +153,7 @@ def main():
     header = []
     for url in apps_url_list:
         header.append(url[46:])
+    header.append('total score')
 
 
     ###title matrix
@@ -156,29 +168,26 @@ def main():
     ###info matrix
     info_word_score_matrix = np.zeros((10, len(info_word_list)))
 
-
     for i, app in enumerate(apps_list):
         for key, count in app['info_word_count'].most_common():
             index = info_word_to_id_dict[key]
             info_word_score_matrix[i, index] = count
         info_word_score_matrix[i] = softmax(info_word_score_matrix[i])
 
-    
-    log_n = np.log([10,9,8,7,6,5,4,3,2,1])
-    ###Title matrix 분석
-    title_word_score_matrix = title_word_score_matrix.T
-    appear_score = np.matmul(title_word_score_matrix, log_n)
-    coincide_score = np.log(np.average(title_word_score_matrix, axis=1))
-    print(appear_score.shape)
-    print(coincide_score.shape)
 
-    ###Info Matrix 분석
-    info_word_score_matrix = info_word_score_matrix.T
+    ##Word Score 생성
 
+    ###title word score
+    title_appearance_score = calc_appearance_score(title_word_score_matrix)
+    title_coincide_score = calc_coincide_score(title_word_score_matrix)
+    total_title_word_score = title_appearance_score + title_coincide_score
+    total_title_word_score = total_title_word_score.reshape(1,len(total_title_word_score))
 
-
-    
-
+    ###info word score 
+    info_appearance_score = calc_appearance_score(info_word_score_matrix)
+    info_coincide_score = calc_coincide_score(info_word_score_matrix)
+    total_info_word_score = info_appearance_score + info_coincide_score
+    total_info_word_score = total_info_word_score.reshape(1,len(total_info_word_score))
 
     
     # 분석 결과 저장
@@ -187,6 +196,10 @@ def main():
     title_index_label = [] 
     for i in range(len(title_word_list)):
         title_index_label.append(title_id_to_word_dict[i]) #word list에서의 index 위치가 word의 id 값으로 사용됨
+
+    title_word_score_matrix = np.append(title_word_score_matrix, total_title_word_score, axis=0)
+    title_word_score_matrix = title_word_score_matrix.T
+
 
     title_df = pd.DataFrame(title_word_score_matrix)
     title_df.index = title_index_label
@@ -198,6 +211,8 @@ def main():
     for i in range(len(info_word_list)):
         info_index_label.append(info_id_to_word_dict[i])
 
+    info_word_score_matrix = np.append(info_word_score_matrix, total_info_word_score, axis=0)
+    info_word_score_matrix = info_word_score_matrix.T
     info_df = pd.DataFrame(info_word_score_matrix)
     info_df.index = info_index_label
     info_df.columns = header
