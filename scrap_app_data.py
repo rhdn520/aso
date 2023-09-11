@@ -100,7 +100,7 @@ def calc_appearance_score(keyword_matrix):
     return appear_score
 
 def calc_coincide_score(keyword_matrix):
-    keyword_matrix = keyword_matrix ** 0.5
+    keyword_matrix = keyword_matrix ** 1.25
     return np.average(keyword_matrix, axis=0) * 10
 
 
@@ -180,13 +180,13 @@ def main():
     ###title word score
     title_appearance_score = calc_appearance_score(title_word_score_matrix)
     title_coincide_score = calc_coincide_score(title_word_score_matrix)
-    total_title_word_score = title_appearance_score + title_coincide_score
+    total_title_word_score = title_appearance_score - title_coincide_score
     total_title_word_score = total_title_word_score.reshape(1,len(total_title_word_score))
 
     ###info word score 
     info_appearance_score = calc_appearance_score(info_word_score_matrix)
     info_coincide_score = calc_coincide_score(info_word_score_matrix)
-    total_info_word_score = info_appearance_score + info_coincide_score
+    total_info_word_score = info_appearance_score - info_coincide_score
     total_info_word_score = total_info_word_score.reshape(1,len(total_info_word_score))
 
     
