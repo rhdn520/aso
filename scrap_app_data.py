@@ -92,10 +92,10 @@ def extract_apps_detail(url: str, info_select: str = ''):
 
     return title, info
 
-log_n = np.log([10,9,8,7,6,5,4,3,2,1])
+
 
 def calc_appearance_score(keyword_matrix):
-    # print(keyword_matrix)
+    log_n = np.log([10,9,8,7,6,5,4,3,2,1])
     appear_score = np.matmul(log_n, keyword_matrix)
     return appear_score
 
