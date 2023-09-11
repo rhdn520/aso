@@ -107,7 +107,7 @@ def calc_coincide_score(keyword_matrix):
 
 def main():
     # 키워드 입력
-    keyword = "습관"
+    keyword = "Rolling Balls"
     search_url = f"https://play.google.com/store/search?q={keyword}&c=apps"
 
     # 상위 앱 추출
@@ -204,7 +204,7 @@ def main():
     title_df = pd.DataFrame(title_word_score_matrix)
     title_df.index = title_index_label
     title_df.columns = header
-    title_df.to_excel(f"{keyword}_title_word.xlsx")
+    title_df.to_excel(f"results/{keyword}_title_word.xlsx")
 
     ##info word matrix 저장
     info_index_label = []
@@ -216,7 +216,7 @@ def main():
     info_df = pd.DataFrame(info_word_score_matrix)
     info_df.index = info_index_label
     info_df.columns = header
-    info_df.to_excel(f"{keyword}_info_word.xlsx")
+    info_df.to_excel(f"results/{keyword}_info_word.xlsx")
 
 
 
