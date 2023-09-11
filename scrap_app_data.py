@@ -107,7 +107,7 @@ def calc_coincide_score(keyword_matrix):
 
 def main():
     # 키워드 입력
-    keyword = "루틴관리"
+    keyword = "습관"
     search_url = f"https://play.google.com/store/search?q={keyword}&c=apps"
 
     # 상위 앱 추출
